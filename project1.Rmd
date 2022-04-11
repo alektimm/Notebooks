@@ -1,0 +1,304 @@
+---
+title: Drive for dough? How the PGA TOUR's best make their money
+author: Alek Timm
+date: '2022-04-10'
+slug: drive-for-dough-how-the-pga-tour-s-best-make-their-money
+categories: []
+tags: []
+---
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(readr)
+library(ggrepel)
+library(ggbeeswarm)
+library(gt)
+
+drivingdistancelogs <- drivingdistancelogs <- read_csv("/Users/alektimm/Documents/SPMC 350/sports_blog/content/post/2022-04-10-drive-for-dough-how-the-pga-tour-s-best-make-their-money/data/drivingdistancelogs.csv")
+golflogs <- read_csv("/Users/alektimm/Documents/SPMC 350/sports_blog/content/post/2022-04-10-drive-for-dough-how-the-pga-tour-s-best-make-their-money/data/golflogs.csv")
+```
+
+Professional golf is undergoing a revolution in the way the game is played. Stronger players and significant advances in driver technology have led to a driving distance boom. 
+
+Spearheaded by the likes of Tiger Woods, John Daly, Rory McIlroy, Bryson Dechambeau, and numerous other bombers, PGA TOUR professionals are ditching the classic golf adage “drive for show, putt for dough.”
+
+Professional golfers are terrific putters; however, it’s the driver that makes the money for the best in the world.
+
+The players have caught on to this idea.
+
+According to the [PGA TOUR](https://www.pgatour.com/stats.html), the average distance off the tee across all players on TOUR has climbed to 297 yards, nearly 30 yards more than Tiger Woods’ first full season in 1997. On a par 72 course with 4 par-3s, that is an extra 420 yards of distance in 18 holes.
+
+```{r echo=FALSE}
+avgdist <- drivingdistancelogs %>% 
+  group_by(YEAR) %>% 
+  summarise(
+    averagedistance = mean(AVERAGE))
+```
+
+```{r echo=FALSE, warning=FALSE}
+ggplot() + 
+  geom_jitter(
+    data=drivingdistancelogs,
+    aes(x=YEAR, y=AVERAGE), color="grey") +
+  geom_line(data=avgdist, aes(x=YEAR, y=averagedistance), color="red") +
+  geom_text(aes(x=2020.5, y=300, label="TOUR Average"), color="black", size=3.2) +
+  scale_y_continuous(breaks=c(240,250,260,270,280,290,300,310,320,330)) +
+  scale_x_continuous(breaks=c(1997,2000,2003,2006,2009,2012,2015,2018,2021)) +
+  labs(
+    x="Year", 
+    y="Average Distance (Yards)", 
+    title="Players are bombing drives longer than ever", 
+    subtitle="The TOUR driving average has jumped over ten percent since 1997", 
+    caption="Source: PGA TOUR | By Alek Timm",
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=10),
+    panel.grid.minor = element_blank()
+    )
+```
+The ability to separate yourself from the field with the driver is a major component of the best players' skillsets.
+
+To find the best players, we can look at the leaders in the PGA TOUR’s FedEx Cup Points standings across 2019-2021. Points are awarded for tournament finishes with the season-ending leader taking home the dough. $15 million to be exact.
+
+Over that span, Jon Rahm, Justin Thomas, Patrick Cantlay, Dustin Johnson, and Tony Finau lead the way in FedEx Cup Points.
+
+The key to each player’s success? Driving. The strokes gained statistics show it.
+
+The PGA TOUR uses ShotLink data to measure strokes gained, a calculation of how much better a player performs against their competitors. ShotLink data provides an average for how many strokes it takes the average TOUR player to hole the ball from all distances and situations.
+
+For example, the TOUR average strokes for the first hole at TPC Sawgrass is 4.10. Player A drives the ball 115 yards from the hole. On average, it takes a TOUR player 2.50 strokes to hole the ball from that location. Player A gained 0.60 strokes driving. Here's how:
+
+Baseline for tee - Baseline for second shot - 1 = strokes gained driving
+4.10 - 2.50 = 1.60 - 1 = +0.60
+
+In short, the closer a player can get the ball to the hole, the more separation they can get from the field.
+
+Strokes gained can be broken down into different measurements for each aspect of the game—driving, approach shots, chipping, and putting. The process simply repeats for each measurement as the player progresses to the hole, each time measuring their proximity against the TOUR average distance from their previous shot.
+
+If putting is what really makes the dough, it seems fair to assume that the best players in the world are the best putters. Based on this logic, these players would gain the most separation from the field on the putting green, putting the ball much closer than their competitors. 
+
+This is far from true.
+
+The best players would argue it's their ability to get to the green in fewer strokes that makes them elite. They do it with distance.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+seasonlogs <- golflogs %>% 
+  group_by(PLAYER) %>% 
+  summarise(
+    eventsplayed = sum(EVENTS21, EVENTS20, EVENTS19),
+    Points = sum(POINTS21, POINTS20, POINTS19),
+    winstotal = sum(WINS21, WINS20, WINS19),
+    Driving = sum(SGOffTheTeeTotal21, SGOffTheTeeTotal20, SGOffTheTeeTotal19),
+    Putting = sum(SGPuttingTotal21, SGPuttingTotal20, SGPuttingTotal19),
+    drivestotal = sum(DrivesTotal21, DrivesTotal20, DrivesTotal19),
+    fairwaystotal = sum(DrivingFairways21, DrivingFairways20, DrivingFairways19),
+    scoringtotal = sum(ScoringAvg21, ScoringAvg20, ScoringAvg19),
+    drivingtotal = sum(DrivingAvg21, DrivingAvg20, DrivingAvg19),
+    Approach = sum(SGApproachAvg21, SGApproachAvg20, SGApproachAvg19),
+    Chipping = sum(SGAroundGreensAvg21, SGAroundGreensAvg20, SGAroundGreensAvg19),
+    sgttgtotal = sum(SGTeeToGreenAvg21, SGTeeToGreenAvg20, SGTeeToGreenAvg19)) %>% 
+  mutate(
+    eventsavg = (eventsplayed/3),
+    fecptsavg = (Points/3),
+    winsavg = (winstotal/3),
+    sgottavg = (Driving/3),
+    sgputtavg = (Putting/3),
+    accuracyavg = ((fairwaystotal/drivestotal)*100),
+    scoringavg = (scoringtotal/3),
+    drivingavg = (drivingtotal/3),
+    sgappavg = (Approach/3),
+    sgagavg = (Chipping/3),
+    sgttgavg = (sgttgtotal/3)) %>% 
+  mutate(
+    Total = (Driving + Putting + Chipping + Approach)) %>% 
+  filter(drivingavg > 250)
+
+fecleaders <- seasonlogs %>% 
+  select(PLAYER, Points, Driving, Putting, Total, Approach, Chipping) %>% 
+  arrange(desc(Points)) %>% 
+  filter(Points > 6300)
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+fecleaderswide <- seasonlogs %>% 
+  select(PLAYER, Driving, Putting, Approach, Chipping) %>% 
+  filter(PLAYER == "Dustin Johnson" | PLAYER == "Patrick Cantlay" | PLAYER == "Justin Thomas" | PLAYER == "Jon Rahm" | PLAYER == "Tony Finau")
+
+fecleaderslong <- fecleaderswide %>% 
+  pivot_longer(
+    cols=Driving | Putting | Approach | Chipping,
+    names_to="Type", 
+    values_to="StrokesGained")
+```
+
+```{r warning=FALSE, echo=FALSE}
+ggplot() + 
+  geom_bar(data=fecleaderslong, aes(x=reorder(PLAYER, StrokesGained), weight=StrokesGained, fill=Type)) + 
+  scale_fill_manual("Strokes Gained", values = c("Approach" = "#046A38", "Chipping" = "orange", "Driving" = "#005EB8", "Putting" = "#BB0000")) +
+  coord_flip() +
+  scale_y_continuous(breaks=c(-20,0,25,50,75,100,125,150,175,200)) +
+    labs(
+    x=element_blank(), 
+    y="Total Strokes Gained",
+    title="The best players dominate the field with the driver", 
+    subtitle="Points leader Jon Rahm's driving nearly triples his strokes gained putting", 
+    caption="Source: PGA TOUR | By Alek Timm"
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=10),
+    panel.grid.minor = element_blank(),
+    )
+```
+
+In the case of Justin Thomas, he is actually losing strokes to the field average in putting. Yet, he still gets FedEx Cup Points by driving the ball further.
+
+In fact, strokes gained driving has the strongest correlation with a player's FedEx Cup Points total of each category of strokes gained. Approximately 22 percent of a player's Points total is dependent upon their strokes gained driving.
+
+With its upward-sloping trend line, the chart below shows that gaining more strokes driving helps PGA TOUR players win more FedEx Cup Points.
+```{r warning=FALSE, echo=FALSE}
+ggplot() +
+  geom_point(data=seasonlogs, aes(x=Driving, y=Points), color = "grey") +
+  geom_smooth(data=seasonlogs, aes(x=Driving, y=Points), method="lm") +  
+  scale_y_continuous(breaks=c(0,1000,2000,3000,4000,5000,6000,7000,8000,9000)) +
+  scale_x_continuous(breaks=c(-125,-100,-75,-50,-25,0,25,50,75,100,125,150,175)) +
+  labs(
+    x="Total Strokes Gained Off The Tee", 
+    y="Total FedExCup Points", 
+    title="It pays to gain strokes in driving", 
+    subtitle="Beating the field in driving is the ticket to success on TOUR", 
+    caption="Source: PGA TOUR | By Alek Timm",
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=10),
+    panel.grid.minor = element_blank()
+    )
+```
+On the other hand, there is just a two percent correlation between higher strokes gained putting and more FedEx Cup Points. The weaker slope shows there is correlation, but not a noteworthy amount.
+
+```{r warning=FALSE, echo=FALSE}
+ggplot() +
+  geom_point(data=seasonlogs, aes(x=Putting, y=Points), color = "grey") +
+  geom_smooth(data=seasonlogs, aes(x=Putting, y=Points), method="lm") +  
+  scale_y_continuous(breaks=c(0,1000,2000,3000,4000,5000,6000,7000,8000,9000)) +
+  scale_x_continuous(breaks=c(-125,-100,-75,-50,-25,0,25,50,75,100,125,150,175)) +
+  labs(
+    x="Total Strokes Gained Putting", 
+    y="Total FedExCup Points", 
+    title="Putting hardly affects FedEx Cup Points", 
+    subtitle="Some of the game's best putters lag far behind in the standings", 
+    caption="Source: PGA TOUR | By Alek Timm",
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=10),
+    panel.grid.minor = element_blank()
+    )
+```
+
+Good putting helps, but driving the ball closer to the green is much more important. Without distance, it is hard to compete.
+
+```{r echo=FALSE, warning=FALSE}
+ggplot() + 
+  geom_point(
+    data=seasonlogs, 
+    aes(x=Driving, y=Putting, size=Points), 
+    color="#666666", 
+    alpha=.3) +
+  geom_vline(xintercept = 20.42613) +
+  geom_hline(yintercept = 15.39074) +
+  geom_point(
+    data=fecleaders,
+    aes(x=Driving, y=Putting, size=Points), 
+    color="red") +
+  geom_text(aes(x=145, y=85, label="Jon Rahm"), color="black") +
+  geom_text(aes(x=117, y=30, label="Dustin Johnson"), color="black") +
+  geom_text(aes(x=74, y=77, label="Patrick Cantlay"), color="black") +
+  geom_text(aes(x=94, y=8, label="Tony Finau"), color="black") +
+  geom_text(aes(x=52, y=-25, label="Justin Thomas"), color="black") +
+  geom_text(aes(x=125, y=125, label="Good Driver, Good Putter"), color="blue") +
+  geom_text(aes(x=-65, y=-100, label="Bad Driver, Bad Putter"), color="blue") +
+  scale_x_continuous(breaks=c(-125,-100,-75,-50,-25,0,25,50,75,100,125,150,175)) +
+  scale_y_continuous(breaks=c(-125,-100,-75,-50,-25,0,25,50,75,100,125,150,175)) +
+  labs(
+    x="Total Strokes Gained Driving", 
+    y="Total Strokes Gained Putting", 
+    title="The best putters can't keep up with the best drivers", 
+    subtitle="The top point winners are all above average in driving despite a few mediocre putters.", 
+    caption="Source: PGA TOUR | By Alek Timm"
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=10),
+    panel.grid.minor = element_blank()
+    )
+```
+It doesn't always take an above average performance on the greens to make money on the PGA TOUR. Players can compensate poor putting with solid driving, but good putting does not compensate poor driving. 
+
+Justin Thomas and Tony Finau live by this logic. They both rank in the top ten in strokes gained driving but are actually below average putters. They can get away with a less than stellar year putting and still come away with far more money than the world's best putters.
+
+Players like this are beginning to emerge more and more on TOUR. Some have coined the phrase "bomb and gouge" to describe their style of play, emphasizing distance over putting and accuracy off the tee. While logic says it's better to play from the fairway than the rough, players also say they are better off hitting from the rough 75 yards from the hole than 150 yards away in the fairway.
+
+It's a smart approach.
+
+Many courses grow the rough higher or add more obstacles to penalize inaccurate drivers and force players to separate themselves in the fairway and on the green.
+
+It makes sense, but distance is still king amongst the FedEx Cup Point leaders.
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+fecleaders <- seasonlogs %>% 
+  select(PLAYER, Points, Driving, Putting, Total, Approach, Chipping, drivingavg, accuracyavg) %>% 
+  arrange(desc(Points)) %>% 
+  filter(Points > 6300)
+```
+
+```{r echo=FALSE, warning=FALSE}
+ggplot() + 
+  geom_point(
+    data=seasonlogs, 
+    aes(x=drivingavg, y=accuracyavg, size=Points), 
+    color="#666666", 
+    alpha=.3) +
+  geom_vline(xintercept = 297.8097) +
+  geom_hline(yintercept = 61.72431) +
+  geom_point(data=fecleaders, aes(x=drivingavg, y=accuracyavg, size=Points), color="red") +
+  geom_text(aes(x=310.9, y=63, label="Jon Rahm"), color="black") +
+  geom_text(aes(x=317, y=57.25, label="Dustin Johnson"), color="black") +
+  geom_text(aes(x=305, y=60.4, label="Patrick Cantlay"), color="black") +
+  geom_text(aes(x=312, y=55, label="Tony Finau"), color="black") +
+  geom_text(aes(x=302, y=56.25, label="Justin Thomas"), color="black") +
+  geom_text(aes(x=310, y=53, label="Long, Innacurate Driver"), color="blue") +
+  geom_text(aes(x=289, y=71, label="Short, Accurate Driver"), color="blue") +
+  scale_x_continuous(breaks=c(270,275,280,285,290,295,300,305,310,315,320)) +
+  scale_y_continuous(breaks=c(50.0,55.0,60.0,65.0,70.0,75.0,80.0,85.0)) +
+  labs(
+    x="Average Driving Distance (Yards)", 
+    y="Fairways Hit %", 
+    title="Distance dominates accuracy in success on TOUR", 
+    subtitle="More yards off the tee turns into more FedEx Cup Points", 
+    caption="Source: PGA TOUR | By Alek Timm"
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=10),
+    panel.grid.minor = element_blank()
+    )
+```
+This is the exact reason why a 51-year-old Phil Mickelson preaches "hitting bombs" even if it means playing from the rough more often. Players are seeing how adding distance at the expense of accuracy and putting finesse can benefit their game.
+
+Golf's governing bodies must find a way to roll back the distance if they want to give out less dough to whoever can hit it the longest. But for now, the long hitters are cashing in much more than the top putters.
