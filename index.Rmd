@@ -1,0 +1,360 @@
+---
+title: What skill breeds success in the MLB? It's not all launch angle
+author: R package build
+date: '2022-05-01'
+slug: what-skill-breeds-success-in-the-mlb-it-s-not-launch-angle
+categories: []
+tags: []
+---
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(readr)
+library(ggrepel)
+library(ggbeeswarm)
+library(gt)
+library(scales)
+
+hittinglogs1521 <- read_csv("/Users/alektimm/Documents/SPMC 350/sports_blog/content/post/2022-05-01-what-skill-breeds-success-in-the-mlb-it-s-not-launch-angle/hittinglogs.csv")
+```
+
+Major League Baseball's [Statcast](https://www.mlb.com/glossary/statcast) technology has revolutionized how we think about baseball and measure player performance. 
+
+The game had never seen advanced metrics like a hitter's exit velocity or a pitcher's spin rate until Statcast was introduced in 2015. Not only do these statistics add another interesting layer of entertainment to the game for fans, they can also help players improve their game in ways we never considered.
+
+In that regard, launch angle has taken baseball storm.
+
+There's a conception that the angle between the flight of a batted ball and the ground can reveal a lot about success as a hitter. It makes sense, in theory. You can't hit home runs if you're hitting ground balls. Thus, coaches everywhere are preaching a high launch angle.
+
+However, there isn't a ton of proof that launch angle actually translates to success. Let's take a look at whether a few degrees of launch angle really affects MLB hitters, especially the best in the game.
+
+We'll look at the ten players with the best individual seasons since 2015 based on their weighted on-base average, or wOBA. wOBA provides an all-encompassing value to a player's batting statistics and how they create runs for their team. You can read more on how it is calculated [here](https://library.fangraphs.com/offense/woba/).
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+leagueaverages <- hittinglogs1521 %>% 
+  summarise(
+    wobavg = mean(wOBA),
+    exitveloavg = mean(exit_velocity_avg),
+    launchangavg = mean(launch_angle_avg),
+    chaserateavg = mean(oz_swing_percent),
+    barrelrateavg = mean(barrel_batted_rate)
+  )
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wobaleadersten <- hittinglogs1521 %>% 
+  select(player, year, wOBA, launch_angle_avg) %>% 
+  arrange(desc(wOBA)) %>% 
+  filter(wOBA > 0.426)
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wobaleaders <- hittinglogs1521 %>% 
+  select(player, year, wOBA, launch_angle_avg, barrel_batted_rate, exit_velocity_avg, oz_swing_miss_percent) %>% 
+  arrange(desc(wOBA)) %>% 
+  filter(wOBA > 0.426)
+```
+
+```{r warning=FALSE, echo=FALSE}
+wobaleadersten %>% 
+  gt() %>% 
+  cols_label(
+    player = "Player",
+    year = "Season",
+    launch_angle_avg = "Launch Angle (°)"
+  ) %>%
+  cols_width(1 ~ px(140), 3 ~ px(180), 
+  ) %>% 
+  tab_header(
+    title = "Which Major League hitters own the best season wOBA in the Statcast era?",
+    subtitle = "Baseball's household names don't always pair launch angle with a high wOBA."
+  ) %>% tab_style(
+    style = cell_text(color = "black", weight = "bold", align = "left"),
+    locations = cells_title("title")
+  ) %>% tab_style(
+    style = cell_text(color = "black", align = "left"),
+    locations = cells_title("subtitle")
+  ) %>%
+  tab_footnote(
+    footnote = md("**MLB Average:** 12.49°"),
+    locations = cells_column_labels(columns = launch_angle_avg)) %>% 
+  tab_source_note(
+    source_note = md("**By:** Alek Timm  |  **Source:** [Baseball Savant](https://baseballsavant.mlb.com/leaderboard/custom?year=2021,2019,2018,2017,2016,2015&type=batter&filter=&sort=9&sortDir=asc&min=q&selections=b_total_pa,b_total_hits,b_home_run,b_k_percent,b_bb_percent,on_base_plus_slg,b_swinging_strike,wOBA,xwOBA,wOBAcon,exit_velocity_avg,launch_angle_avg,barrel_batted_rate,solidcontact_percent,hard_hit_percent,z_swing_percent,z_swing_miss_percent,oz_swing_percent,oz_swing_miss_percent,oz_contact_percent,pitch_count_offspeed,pitch_count_fastball,pitch_count_breaking,iz_contact_percent,pull_percent,straightaway_percent,opposite_percent,f_strike_percent,&chart=false&x=b_total_pa&y=b_total_pa&r=no&chartType=beeswarm)")
+    ) %>%
+  tab_style(
+    style = cell_text(color = "black", weight = "bold", size=14),
+    locations = cells_body(
+      columns = c(player))) %>% 
+    tab_style(
+    style = cell_text(color = "black", weight = "normal", size=14),
+    locations = cells_body(
+      columns = c(year, wOBA, launch_angle_avg))) %>%
+  tab_style(
+     locations = cells_column_labels(columns = everything()),
+     style = list(
+       cell_borders(sides = "bottom", weight = px(3)),
+       cell_text(weight = "bold", size=13))) %>%
+    data_color(
+    columns = launch_angle_avg,
+    colors = scales::col_numeric(
+      palette = c("#FFF2F2", "palegreen", "forestgreen"),
+      domain = c(10.5, 25)))
+```
+
+None of those players come as a surprise as they each finished in the top-3 of MVP voting in their top season(s). What might be more surprising is that most of their launch angles were fairly mediocre.
+
+Players like Christian Yelich and Joey Votto were even below the league average, meaning they hit the ball on the ground more than the average hitter. Maybe that was intentional?
+
+Hitters can only control the outcome of a play so much considering the pitcher and defense certainly have the advantage in baseball. Once a hitter takes the bat off their shoulder, they can control three things - what pitches they swing at, the launch angle, and where on the bat they make contact.
+
+The best hitters in the game have figured out that hitting the ball on the barrel can do a lot more for them than launching the ball in the air.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplot() + 
+  geom_point(
+    data=hittinglogs1521, 
+    aes(x=launch_angle_avg, y=barrel_batted_rate), 
+    color="grey", 
+    alpha=.5) +
+  geom_vline(xintercept = 12.4) +
+  geom_hline(yintercept = 0.07) +
+  geom_point(
+    data=wobaleaders,
+    aes(x=launch_angle_avg, y=barrel_batted_rate), color="red", size = 4) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    breaks = c(0.00, 0.05, 0.10, 0.15, 0.20, 0.25)
+    ) +
+  geom_text(aes(x=14.7, y=0.145, label="Harper ('15)"), color="black") +
+  geom_text(aes(x=20.6, y=0.141, label="Betts ('18)"), color="black") +
+  geom_text(aes(x=20.7, y=0.168, label="Trout ('18)"), color="black") +
+  geom_text(aes(x=9.1, y=0.162, label="Yelich ('19)"), color="black") +
+  geom_text(aes(x=18, y=0.12, label="Trout ('17)"), color="black") +
+  geom_text(aes(x=20.1, y=0.195, label="Trout ('19)"), color="black") +
+  geom_text(aes(x=14.4, y=0.198, label="Harper ('21)"), color="black") +
+  geom_text(aes(x=17.9, y=0.257, label="Judge ('17)"), color="black") +
+  geom_text(aes(x=16.4, y=0.085, label="Votto ('17)"), color="black") +
+  geom_text(aes(x=9.3, y=0.109, label="Votto ('15)"), color="black") +
+  geom_text(aes(x=19, y=.22, label="High Launch Angle, High Barrel Rate"), color="blue") +
+  geom_text(aes(x=5, y=0.01, label="Low Launch Angle, Low Barrel Rate"), color="blue") +
+  labs(
+    x="Average Launch Angle", 
+    y="Barrel Rate", 
+    title="Barelling up the ball matters more than launch angle", 
+    subtitle="Votto and Yelich got away with low launch angles by hitting the ball hard.", 
+    caption="By: Alek Timm  |  Source: Baseball Savant"
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=11),
+    panel.grid.minor = element_blank()
+    )
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+barrelrate <- hittinglogs1521 %>% 
+  group_by(barrel_batted_pct) %>% 
+  summarise(averagewoba = mean(wOBA)) %>% 
+  filter(barrel_batted_pct < 0.21)
+
+mlbbarrelrate <- hittinglogs1521 %>% 
+  filter(barrel_batted_pct < 0.21)
+
+launchangle <- hittinglogs1521 %>% 
+  group_by(launch_angle_rounded) %>% 
+  summarise(averagewoba = mean(wOBA)) %>%   
+  filter(launch_angle_rounded < 22.5) %>% 
+  filter(launch_angle_rounded > 2.5)
+  
+mlblaunchangle <- hittinglogs1521 %>% 
+  filter(launch_angle_rounded < 22.5) %>% 
+  filter(launch_angle_rounded > 2.5)
+
+chaserate <- hittinglogs1521 %>% 
+  group_by(chase_rate_rounded) %>% 
+  summarise(averagewoba = mean(wOBA)) %>% 
+  filter(chase_rate_rounded < .460) %>% 
+  filter(chase_rate_rounded > 0.150)
+  
+mlbchaserate <- hittinglogs1521 %>% 
+  filter(chase_rate_rounded < .460) %>% 
+  filter(chase_rate_rounded > 0.150)
+```
+
+Whether the ball is launched at 18° or beat into the dirt at 5°, the speed at which the ball travels off the bat, based entirely on the quality of the contact, matters the most in getting hits and creating runs.
+
+A fly ball hit off the end of the bat is going to do less damage than a ground ball that is squared up on the barrel. In fact, about 38% of a player's wOBA is dependent upon their barrel rate (frequency they make contact on the barrel of the bat).
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplot() + 
+  geom_jitter(
+    data=mlbbarrelrate,
+    aes(x=barrel_batted_pct, y=wOBA), color="grey") +
+  geom_line(data=barrelrate, aes(x=barrel_batted_pct, y=averagewoba), color="red") +
+  scale_x_continuous(
+    labels = scales::percent_format(accuracy = 0.1),
+    breaks = c(0.00, 0.025, 0.05, 0.075, 0.10, 0.125, 0.15, 0.175, 0.20)
+    ) +
+  scale_y_continuous(
+    labels = scales::label_number(accuracy = 0.001),
+    breaks = c(0.200, 0.250, 0.300, 0.350, 0.400, 0.450, 0.500)
+    ) +
+  geom_vline(xintercept = 0.0767) +
+  geom_hline(yintercept = 0.339) +
+  geom_text(aes(x=0.025, y=.240, label="Bad Hitter, Low Barrel Rate"), color="blue") +
+  geom_text(aes(x=0.15, y=0.455, label="Good Hitter, High Barrel Rate"), color="blue") +
+  labs(
+    x="Barrel Rate", 
+    y="wOBA", 
+    title="Barrel rate influences wOBA more than any other metric", 
+    subtitle="Players can see their wOBA jump 50 points by upping their barrel rate by 5 percent", 
+    caption="By: Alek Timm  |  Source: Baseball Savant",
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=11),
+    panel.grid.minor = element_blank()
+    )
+```
+There's only about a 4.8% correlation between higher launch angle and a better wOBA, the lowest of any hitter-controlled metric. When coaches say to hit the ball in the air, they should really be telling hitters to barrel up the ball first and get it in the air second.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplot() + 
+  geom_jitter(
+    data=mlblaunchangle,
+    aes(x=launch_angle_rounded, y=wOBA), color="grey") +
+  geom_line(data=launchangle, aes(x=launch_angle_rounded, y=averagewoba), color="red") +
+  scale_x_continuous(
+    labels = scales::label_number(accuracy = 0.1),
+    breaks = c(2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25)
+    ) +
+  scale_y_continuous(
+    labels = scales::label_number(accuracy = 0.001)
+    ) +
+  geom_vline(xintercept = 12.4) +
+  geom_hline(yintercept = 0.339) +
+  geom_text(aes(x=6.2, y=.240, label="Bad Hitter, Low Launch Angle"), color="blue") +
+  geom_text(aes(x=18.5, y=0.455, label="Good Hitter, High Launch Angle"), color="blue") +
+  labs(
+    x="Launch Angle (°)", 
+    y="wOBA", 
+    title="Launch angle has no effect on a player's wOBA", 
+    subtitle="Groundball hitters can perform just as highly as the game's bombers", 
+    caption="By: Alek Timm  |  Source: Baseball Savant",
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=11),
+    panel.grid.minor = element_blank()
+    )
+```
+Coaches, and fans especially, also love to evaluate hitters based on their plate discipline. Pitchers are performing at the highest level the game has ever seen and can spin some truly wicked breaking balls. This leads to a lot of hitters chasing pitches outside the strike zone.
+
+Again, the third component of hitter-controlled metrics doesn't actually affect a hitter's wOBA all too much. While chasing bad pitches can be detrimental to a hitter, taking walks isn't exactly creating many runs.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplot() + 
+  geom_jitter(
+    data=mlbchaserate,
+    aes(x=chase_rate_rounded, y=wOBA), color="grey") +
+  geom_line(data=chaserate, aes(x=chase_rate_rounded, y=averagewoba), color="red") +
+  scale_x_continuous(
+    labels = scales::percent_format(accuracy = 0.1),
+    breaks = c(0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50)
+    ) +
+  scale_y_continuous(
+    labels = scales::label_number(accuracy = 0.001),
+    breaks = c(0.200, 0.250, 0.300, 0.350, 0.400, 0.450, 0.500)
+    ) +
+  geom_text(aes(x=0.38, y=.240, label="Bad Hitter, High Chase Rate"), color="blue") +
+  geom_text(aes(x=0.22, y=0.455, label="Good Hitter, Low Chase Rate"), color="blue") +
+  geom_vline(xintercept = 0.285) +
+  geom_hline(yintercept = 0.339) +
+  labs(
+    x="Chase Rate", 
+    y="wOBA", 
+    title="Chasing pitches out of the strike zone doesn't kill wOBA", 
+    subtitle="Players can compensate poor plate discipline with exit velocity", 
+    caption="By: Alek Timm  |  Source: Baseball Savant",
+    ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold"),
+    axis.title = element_text(size = 10), 
+    plot.subtitle = element_text(size=11),
+    panel.grid.minor = element_blank()
+    )
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wobapercentiles <- hittinglogs1521 %>% 
+  select(player, year, wOBA, launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile) %>% 
+  arrange(desc(wOBA)) %>% 
+  filter(wOBA > 0.426)
+```
+
+When you look at all Major League hitters and weigh which ones are better than others, there's an overwhelming commonality amongst the best - they barrel up the ball. Launch angle and chase rate have minimal effects on the hitter's overall performance, and should be weighed much less in those conversations of who the best players are.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wobapercentiles %>% 
+  gt() %>% 
+  cols_label(
+    player = "Player",
+    year = "Season",
+    launch_angle_percentile = "Launch Angle",
+    barrel_rate_percentile = "Barrel Rate",
+    chase_rate_percentile = "Chase Rate"
+  ) %>%
+  cols_width(1 ~ px(140), 3 ~ px(180), 
+  ) %>% 
+  tab_header(
+    title = "The best players put the barrel on the ball",
+    subtitle = "Launch angle and chase rate can't explain a high wOBA"
+  ) %>% tab_style(
+    style = cell_text(color = "black", weight = "bold", align = "left"),
+    locations = cells_title("title")
+  ) %>% tab_style(
+    style = cell_text(color = "black", align = "left"),
+    locations = cells_title("subtitle")
+  ) %>%
+  tab_source_note(
+    source_note = md("**By:** Alek Timm  |  **Source:** [Baseball Savant](https://baseballsavant.mlb.com/leaderboard/custom?year=2021,2019,2018,2017,2016,2015&type=batter&filter=&sort=9&sortDir=asc&min=q&selections=b_total_pa,b_total_hits,b_home_run,b_k_percent,b_bb_percent,on_base_plus_slg,b_swinging_strike,wOBA,xwOBA,wOBAcon,exit_velocity_avg,launch_angle_avg,barrel_batted_rate,solidcontact_percent,hard_hit_percent,z_swing_percent,z_swing_miss_percent,oz_swing_percent,oz_swing_miss_percent,oz_contact_percent,pitch_count_offspeed,pitch_count_fastball,pitch_count_breaking,iz_contact_percent,pull_percent,straightaway_percent,opposite_percent,f_strike_percent,&chart=false&x=b_total_pa&y=b_total_pa&r=no&chartType=beeswarm)")) %>%
+  fmt_percent(columns = c(launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile), decimals = 0) %>% 
+  tab_style(
+    style = cell_text(color = "black", weight = "bold", size=14),
+    locations = cells_body(
+      columns = c(player))) %>% 
+    tab_style(
+    style = cell_text(color = "black", weight = "normal", size=14),
+    locations = cells_body(
+      columns = c(year, wOBA, launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile))) %>%
+  tab_style(
+     locations = cells_column_labels(columns = everything()),
+     style = list(
+       cell_borders(sides = "bottom", weight = px(3)),
+       cell_text(weight = "bold", size=13))) %>%
+    data_color(
+    columns = c(launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile), 
+    colors = scales::col_numeric(
+      palette = c("#FF3333", "#FF7E7E", "#FEB5B5", "#E9FFD6", "#5DDE56", "#089800"),
+      domain = c(0, 1))) %>% 
+  tab_style(
+    cell_borders(sides = "all", color = "white", style = "solid", weight = px(1)),
+      locations = cells_body(columns = c(launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile), rows = everything())) %>% 
+  tab_style(
+    cell_text(color = "black"),
+    locations = cells_body(columns = c(launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile), rows = everything())) %>% 
+tab_spanner(
+    label = "Percentile Rank",
+    columns = vars(launch_angle_percentile, barrel_rate_percentile, chase_rate_percentile)
+)
+```
+
+The next time you're watching baseball and hear the commentators complain about a player chasing pitches out of the zone or hitting the ball on the ground, remember that it's the barrel that counts. 
+
